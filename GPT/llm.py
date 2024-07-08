@@ -23,7 +23,7 @@ class KimiService:
         )
 
     def init_tune(self):
-        with pathlib.Path(__file__).parent.joinpath(fr"prompts/{self.character}.txt").open() as f:
+        with pathlib.Path(__file__).parent.joinpath(fr"prompts/{self.character}.txt").open(encoding='utf-8') as f:
             return f.read()
 
     def answer(self, text: str) -> str:

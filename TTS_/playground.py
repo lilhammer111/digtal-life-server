@@ -6,18 +6,18 @@ import pyaudio
 from TTS.tts import TTService
 
 config_combo = [
-        # ("TTS/models/CyberYunfei3k.json", "TTS/models/yunfei3k_69k.pth"),
-        # ("TTS/models/paimon6k.json", "TTS/models/paimon6k_390k.pth"),
-        # ("TTS/models/ayaka.json", "TTS/models/ayaka_167k.pth"),
-        # ("TTS/models/ningguang.json", "TTS/models/ningguang_179k.pth"),
-        # ("TTS/models/nahida.json", "TTS/models/nahida_129k.pth"),
-        # ("TTS/models_unused/miko.json", "TTS/models_unused/miko_139k.pth"),
-        # ("TTS/models_unused/yoimiya.json", "TTS/models_unused/yoimiya_102k.pth"),
-        # ("TTS/models/noelle.json", "TTS/models/noelle_337k.pth"),
-        # ("TTS/models_unused/yunfeimix.json", "TTS/models_unused/yunfeimix_122k.pth"),
-        # ("TTS/models_unused/yunfeineo.json", "TTS/models_unused/yunfeineo_25k.pth"),
-        # ("TTS/models/yunfeimix2.json", "TTS/models/yunfeimix2_47k.pth")
-        ("TTS/models_unused/zhongli.json", "TTS/models_unused/zhongli_44k.pth"),
+        # ("TTS_/models/CyberYunfei3k.json", "TTS_/models/yunfei3k_69k.pth"),
+        # ("TTS_/models/paimon6k.json", "TTS_/models/paimon6k_390k.pth"),
+        # ("TTS_/models/ayaka.json", "TTS_/models/ayaka_167k.pth"),
+        # ("TTS_/models/ningguang.json", "TTS_/models/ningguang_179k.pth"),
+        # ("TTS_/models/nahida.json", "TTS_/models/nahida_129k.pth"),
+        # ("TTS_/models_unused/miko.json", "TTS_/models_unused/miko_139k.pth"),
+        # ("TTS_/models_unused/yoimiya.json", "TTS_/models_unused/yoimiya_102k.pth"),
+        # ("TTS_/models/noelle.json", "TTS_/models/noelle_337k.pth"),
+        # ("TTS_/models_unused/yunfeimix.json", "TTS_/models_unused/yunfeimix_122k.pth"),
+        # ("TTS_/models_unused/yunfeineo.json", "TTS_/models_unused/yunfeineo_25k.pth"),
+        # ("TTS_/models/yunfeimix2.json", "TTS_/models/yunfeimix2_47k.pth")
+        ("TTS_/models_unused/zhongli.json", "TTS_/models_unused/zhongli_44k.pth"),
     ]
 for cfg, model in config_combo:
     a = TTService(cfg, model, 'test', 1)

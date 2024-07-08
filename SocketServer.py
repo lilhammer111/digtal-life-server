@@ -15,7 +15,7 @@ import GPT.tune
 from utils.FlushingFileHandler import FlushingFileHandler
 from ASR import ASRService
 from GPT import llm
-from TTS.tts import TTService
+from TTS_.tts import TTService
 from SentimentEngine import SentimentEngine
 
 console_logger = logging.getLogger()
@@ -43,7 +43,7 @@ def str2bool(v):
 def parse_args():
     parser = argparse.ArgumentParser()
     # parser.add_argument("--chatVer", type=int, nargs='?', required=True)
-    parser.add_argument("--port", type=int, default=38438)
+    parser.add_argument("--port", type=int, default=33333)
     parser.add_argument("--APIKey", type=str, nargs='?', required=False)
     parser.add_argument("--email", type=str, nargs='?', required=False)
     parser.add_argument("--password", type=str, nargs='?', required=False)
@@ -77,9 +77,9 @@ class Server:
 
         ## hard coded character map
         self.char_name = {
-            'paimon': ['TTS/models/paimon6k.json', 'TTS/models/paimon6k_390k.pth', 'character_paimon', 1],
-            'yunfei': ['TTS/models/yunfeimix2.json', 'TTS/models/yunfeimix2_53k.pth', 'character_yunfei', 1.1],
-            'catmaid': ['TTS/models/catmix.json', 'TTS/models/catmix_107k.pth', 'character_catmaid', 1.2]
+            'paimon': ['TTS_/models/paimon6k.json', 'TTS_/models/paimon6k_390k.pth', 'character_paimon', 1],
+            'yunfei': ['TTS_/models/yunfeimix2.json', 'TTS_/models/yunfeimix2_53k.pth', 'character_yunfei', 1.1],
+            'catmaid': ['TTS_/models/catmix.json', 'TTS_/models/catmix_107k.pth', 'character_catmaid', 1.2]
         }
 
         # PARAFORMER
@@ -88,7 +88,7 @@ class Server:
         # CHAT GPT
         self.kimi = llm.KimiService(args)
 
-        # TTS
+        # TTS_
         self.tts = TTService()
 
         # Sentiment Engine
