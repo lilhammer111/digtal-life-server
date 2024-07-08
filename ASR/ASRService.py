@@ -3,8 +3,6 @@ import time
 
 import requests
 
-from ASR.rapid_paraformer import RapidParaformer
-
 
 class ASRService():
     # def __init__(self, config_path):
@@ -22,8 +20,8 @@ class ASRService():
 
     def file_upload(self, wav_path):
         upload_api_url = "http://192.168.10.201:8888/api/upload"
-        source = 1
-        files = {"files": open(wav_path, "rb")}
+        source = "1"
+        files = {"file": open(wav_path, "rb")}
         data = {'source': source}
 
         response = requests.post(upload_api_url, files=files, data=data)
@@ -31,18 +29,19 @@ class ASRService():
 
     def infer(self, wav_path):
         ASR_API_URL = "http://192.168.10.220:5052/api/spe2text/ai_en"
-        audio_url = self.file_upload(wav_path)
+        audio_url = self.file_upload(wav_path)["data"]['file_url']
+        print(audio_url)
         sid = "1234"
         data = {'sid': sid, 'audio_url': audio_url}
-        response = requests.post(ASR_API_URL,data=data)
+        response = requests.post(ASR_API_URL, json=data)
 
-        return response.json()
+        return response.json()['data']
 
 
 if __name__ == '__main__':
     service = ASRService()
 
     # print(wav_path)
-    wav_path = 'ASR/test_wavs/'
+    wav_path = './test_wavs/A1_NAME1.wav'
     result = service.infer(wav_path)
     print(result)
