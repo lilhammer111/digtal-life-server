@@ -1,5 +1,6 @@
 import argparse
 import os
+import pathlib
 import socket
 import time
 import logging
@@ -8,14 +9,13 @@ from logging.handlers import TimedRotatingFileHandler
 
 import librosa
 import requests
-import revChatGPT
 import soundfile
 
 import GPT.tune
 from utils.FlushingFileHandler import FlushingFileHandler
 from ASR import ASRService
-from GPT import GPTService
-from TTS import TTService
+from GPT import llm
+from TTS.tts import TTService
 from SentimentEngine import SentimentEngine
 
 console_logger = logging.getLogger()
@@ -39,9 +39,11 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Unsupported value encountered.')
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--chatVer", type=int, nargs='?', required=True)
+    # parser.add_argument("--chatVer", type=int, nargs='?', required=True)
+    parser.add_argument("--port", type=int, default=38438)
     parser.add_argument("--APIKey", type=str, nargs='?', required=False)
     parser.add_argument("--email", type=str, nargs='?', required=False)
     parser.add_argument("--password", type=str, nargs='?', required=False)
@@ -49,21 +51,24 @@ def parse_args():
     parser.add_argument("--proxy", type=str, nargs='?', required=False)
     parser.add_argument("--paid", type=str2bool, nargs='?', required=False)
     parser.add_argument("--model", type=str, nargs='?', required=False)
-    parser.add_argument("--stream", type=str2bool, nargs='?', required=True)
-    parser.add_argument("--character", type=str, nargs='?', required=True)
+    # parser.add_argument("--stream", type=str2bool, nargs='?', required=True)
+    parser.add_argument("--character", type=str, default="paimon", nargs='?', required=True)
     parser.add_argument("--ip", type=str, nargs='?', required=False)
     parser.add_argument("--brainwash", type=str2bool, nargs='?', required=False)
+    parser.add_argument("--kimi-key", type=str, required=True)
+    parser.add_argument("--kimi-model", type=str)
     return parser.parse_args()
 
 
-class Server():
+class Server:
     def __init__(self, args):
         # SERVER STUFF
         self.addr = None
         self.conn = None
         logging.info('Initializing Server...')
-        self.host = socket.gethostbyname(socket.gethostname())
-        self.port = 38438
+        # self.host = socket.gethostbyname(socket.gethostname())
+        self.host = "0.0.0.0"
+        self.port = args.port
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 10240000)
         self.s.bind((self.host, self.port))
@@ -75,78 +80,90 @@ class Server():
             'paimon': ['TTS/models/paimon6k.json', 'TTS/models/paimon6k_390k.pth', 'character_paimon', 1],
             'yunfei': ['TTS/models/yunfeimix2.json', 'TTS/models/yunfeimix2_53k.pth', 'character_yunfei', 1.1],
             'catmaid': ['TTS/models/catmix.json', 'TTS/models/catmix_107k.pth', 'character_catmaid', 1.2]
-
         }
 
         # PARAFORMER
-        self.paraformer = ASRService.ASRService('./ASR/resources/config.yaml')
+        self.paraformer = ASRService.ASRService()
 
         # CHAT GPT
-        self.chat_gpt = GPTService.GPTService(args)
+        self.kimi = llm.KimiService(args)
 
         # TTS
-        self.tts = TTService.TTService(*self.char_name[args.character])
+        self.tts = TTService()
 
         # Sentiment Engine
-        self.sentiment = SentimentEngine.SentimentEngine('SentimentEngine/models/paimon_sentiment.onnx')
+        # self.sentiment = SentimentEngine.SentimentEngine('SentimentEngine/models/paimon_sentiment.onnx')
+
+    def handle(self):
+        """handle client request"""
+        logging.info(f"Connected by {self.addr}")
+        self.conn.sendall(b'%s' % self.char_name[args.character][2].encode())
+        while True:
+            try:
+                file = self.__receive_file()
+                # print('file received: %s' % file)
+                with open(self.tmp_recv_file, 'wb') as f:
+                    f.write(file)
+                    logging.info('WAV file received and saved.')
+                ask_text = self.process_voice()
+                # if args.stream:
+                #     for sentence in self.kimi.ask_stream(ask_text):
+                #         self.send_voice(sentence)
+                #     self.notice_stream_end()
+                #     logging.info('Stream finished.')
+                # else:
+                resp_text = self.kimi.answer(ask_text)
+                self.send_voice(resp_text)
+                self.notice_stream_end()
+
+            # except revChatGPT.typings.APIConnectionError as e:
+            #     logging.error(e.__str__())
+            #     logging.info('API rate limit exceeded, sending: %s' % GPT.tune.exceed_reply)
+            #     self.send_voice(GPT.tune.exceed_reply, 2)
+            #     self.notice_stream_end()
+            # except revChatGPT.typings.Error as e:
+            #     logging.error(e.__str__())
+            #     logging.info('Something wrong with OPENAI, sending: %s' % GPT.tune.error_reply)
+            #     self.send_voice(GPT.tune.error_reply, 1)
+            #     self.notice_stream_end()
+            except requests.exceptions.RequestException as e:
+                logging.error(e.__str__())
+                logging.info('Something wrong with internet, sending: %s' % GPT.tune.error_reply)
+                self.send_voice(GPT.tune.error_reply, 1)
+                self.notice_stream_end()
+            except Exception as e:
+                logging.error(e.__str__())
+                logging.error(traceback.format_exc())
+                break
 
     def listen(self):
-        # MAIN SERVER LOOP
+        """
+        listen socket connection request
+        """
+        self.s.listen()
+
+        logging.info(f"Server is listening on {self.host}:{self.port}...")
         while True:
-            self.s.listen()
-            logging.info(f"Server is listening on {self.host}:{self.port}...")
             self.conn, self.addr = self.s.accept()
-            logging.info(f"Connected by {self.addr}")
-            self.conn.sendall(b'%s' % self.char_name[args.character][2].encode())
-            while True:
-                try:
-                    file = self.__receive_file()
-                    # print('file received: %s' % file)
-                    with open(self.tmp_recv_file, 'wb') as f:
-                        f.write(file)
-                        logging.info('WAV file received and saved.')
-                    ask_text = self.process_voice()
-                    if args.stream:
-                        for sentence in self.chat_gpt.ask_stream(ask_text):
-                            self.send_voice(sentence)
-                        self.notice_stream_end()
-                        logging.info('Stream finished.')
-                    else:
-                        resp_text = self.chat_gpt.ask(ask_text)
-                        self.send_voice(resp_text)
-                        self.notice_stream_end()
-                except revChatGPT.typings.APIConnectionError as e:
-                    logging.error(e.__str__())
-                    logging.info('API rate limit exceeded, sending: %s' % GPT.tune.exceed_reply)
-                    self.send_voice(GPT.tune.exceed_reply, 2)
-                    self.notice_stream_end()
-                except revChatGPT.typings.Error as e:
-                    logging.error(e.__str__())
-                    logging.info('Something wrong with OPENAI, sending: %s' % GPT.tune.error_reply)
-                    self.send_voice(GPT.tune.error_reply, 1)
-                    self.notice_stream_end()
-                except requests.exceptions.RequestException as e:
-                    logging.error(e.__str__())
-                    logging.info('Something wrong with internet, sending: %s' % GPT.tune.error_reply)
-                    self.send_voice(GPT.tune.error_reply, 1)
-                    self.notice_stream_end()
-                except Exception as e:
-                    logging.error(e.__str__())
-                    logging.error(traceback.format_exc())
-                    break
+            self.handle()
+        # self.conn.close()
+        # logging.info(f"Connection closed.")
 
     def notice_stream_end(self):
         time.sleep(0.5)
         self.conn.sendall(b'stream_finished')
 
-    def send_voice(self, resp_text, senti_or = None):
-        self.tts.read_save(resp_text, self.tmp_proc_file, self.tts.hps.data.sampling_rate)
+    def send_voice(self, resp_text, senti_or=None):
+        # self.tts.read_save(resp_text, self.tmp_proc_file, self.tts.hps.data.sampling_rate)
+        self.tts.read_save(resp_text, self.tmp_proc_file)
+
         with open(self.tmp_proc_file, 'rb') as f:
             senddata = f.read()
         if senti_or:
             senti = senti_or
         else:
-            senti = self.sentiment.infer(resp_text)
+            # senti = self.sentiment.infer(resp_text)
+            senti = 1
         senddata += b'?!'
         senddata += b'%i' % senti
         self.conn.sendall(senddata)
@@ -175,8 +192,10 @@ class Server():
             size = os.path.getsize(self.tmp_recv_file) - 8
             # Write the size of the file to the first 4 bytes
             f.seek(4)
+            # set wav file ChunkSize manually
             f.write(size.to_bytes(4, byteorder='little'))
             f.seek(40)
+            # set wav file Subchunk2Size manually
             f.write((size - 28).to_bytes(4, byteorder='little'))
             f.flush()
 

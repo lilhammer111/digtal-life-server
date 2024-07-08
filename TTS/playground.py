@@ -3,7 +3,7 @@ import wave
 import numpy as np
 import pyaudio
 
-from TTS.TTService import TTService
+from TTS.tts import TTService
 
 config_combo = [
         # ("TTS/models/CyberYunfei3k.json", "TTS/models/yunfei3k_69k.pth"),
