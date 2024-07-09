@@ -11,11 +11,10 @@ import librosa
 import requests
 import soundfile
 
-import GPT.tune
+from tts_service.tts import TTService
 from utils.FlushingFileHandler import FlushingFileHandler
 from ASR import ASRService
 from GPT import llm
-from TTS_.tts import TTService
 from SentimentEngine import SentimentEngine
 
 console_logger = logging.getLogger()
@@ -106,31 +105,10 @@ class Server:
                     f.write(file)
                     logging.info('WAV file received and saved.')
                 ask_text = self.process_voice()
-                # if args.stream:
-                #     for sentence in self.kimi.ask_stream(ask_text):
-                #         self.send_voice(sentence)
-                #     self.notice_stream_end()
-                #     logging.info('Stream finished.')
-                # else:
                 resp_text = self.kimi.answer(ask_text)
                 self.send_voice(resp_text)
                 self.notice_stream_end()
 
-            # except revChatGPT.typings.APIConnectionError as e:
-            #     logging.error(e.__str__())
-            #     logging.info('API rate limit exceeded, sending: %s' % GPT.tune.exceed_reply)
-            #     self.send_voice(GPT.tune.exceed_reply, 2)
-            #     self.notice_stream_end()
-            # except revChatGPT.typings.Error as e:
-            #     logging.error(e.__str__())
-            #     logging.info('Something wrong with OPENAI, sending: %s' % GPT.tune.error_reply)
-            #     self.send_voice(GPT.tune.error_reply, 1)
-            #     self.notice_stream_end()
-            except requests.exceptions.RequestException as e:
-                logging.error(e.__str__())
-                logging.info('Something wrong with internet, sending: %s' % GPT.tune.error_reply)
-                self.send_voice(GPT.tune.error_reply, 1)
-                self.notice_stream_end()
             except Exception as e:
                 logging.error(e.__str__())
                 logging.error(traceback.format_exc())
