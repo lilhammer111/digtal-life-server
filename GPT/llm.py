@@ -37,8 +37,8 @@ class KimiService:
             "content": text
         }
 
-        if len(self.history) == 5:
-            self.history.pop(0)
+        if len(self.history) == 10:
+            self.history = self.history[2:]
 
         self.history.append(msg)
 
@@ -47,5 +47,12 @@ class KimiService:
             model=self.model,
             messages=self.history
         )
-        logging.info('ChatGPT Response: %s, time used %.2f' % (data.choices[0].message.content, time.time() - stime))
-        return data.choices[0].message.content
+
+        content = data.choices[0].message.content
+
+        self.history.append({
+            "role": "assistant",
+            "content": content
+        })
+        logging.info('ChatGPT Response: %s, time used %.2f' % (content, time.time() - stime))
+        return content
