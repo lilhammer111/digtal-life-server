@@ -37,10 +37,8 @@ def str2bool(v):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ip", type=str, nargs='?', required=False)
     parser.add_argument("--port", type=int, default=33333)
-    parser.add_argument("--model", type=str, nargs='?', required=False)
-    parser.add_argument("--character", type=str, default="paimon", nargs='?', required=False)
+    parser.add_argument("--character", type=str, default="alfaright", nargs='?', required=False)
     parser.add_argument("--kimi-key", type=str, default="sk-TtCrzHinIyVKEeaAvIuQPDZtixxADloU9QDlwVoYNdxh2tf9",
                         required=False)
     parser.add_argument("--kimi-model", type=str)
@@ -63,24 +61,7 @@ class Server:
 
         # hard coded character map
         self.char_name = {
-            'paimon': [
-                'tts_service/models/paimon6k.json',
-                'tts_service/models/paimon6k_390k.pth',
-                'character_paimon',
-                1
-            ],
-            'yunfei': [
-                'tts_service/models/yunfeimix2.json',
-                'tts_service/models/yunfeimix2_53k.pth',
-                'character_yunfei',
-                1.1
-            ],
-            'catmaid': [
-                'tts_service/models/catmix.json',
-                'tts_service/models/catmix_107k.pth',
-                'character_catmaid',
-                1.2
-            ]
+            'alfaright': 'character_paimon',
         }
 
         # PARAFORMER
@@ -98,7 +79,7 @@ class Server:
     def handle(self):
         """handle client request"""
         logging.info(f"Connected by {self.addr}")
-        self.conn.sendall(b'%s' % self.char_name[arguments.character][2].encode())
+        self.conn.sendall(b'%s' % self.char_name[arguments.character].encode())
         while True:
             try:
                 file = self.__receive_file()

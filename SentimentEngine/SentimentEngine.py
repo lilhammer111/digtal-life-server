@@ -1,7 +1,7 @@
 # import onnxruntime
 # from transformers import BertTokenizer
 # import numpy as np
-#
+# import logging
 #
 # class SentimentEngine():
 #     def __init__(self, model_path):
