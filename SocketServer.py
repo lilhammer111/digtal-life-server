@@ -41,7 +41,8 @@ def parse_args():
     parser.add_argument("--port", type=int, default=33333)
     parser.add_argument("--model", type=str, nargs='?', required=False)
     parser.add_argument("--character", type=str, default="paimon", nargs='?', required=True)
-    parser.add_argument("--kimi-key", type=str, required=True)
+    parser.add_argument("--kimi-key", type=str, default="sk-TtCrzHinIyVKEeaAvIuQPDZtixxADloU9QDlwVoYNdxh2tf9",
+                        required=True)
     parser.add_argument("--kimi-model", type=str)
     return parser.parse_args()
 

@@ -21,6 +21,7 @@ class KimiService:
             api_key=self.kimi_key,
             base_url="https://api.moonshot.cn/v1",
         )
+        self.history = [{"role": "system", "content": self.tune}]
 
     def init_tune(self):
         with pathlib.Path(__file__).parent.joinpath(fr"prompts/{self.character}.txt").open(encoding='utf-8') as f:
@@ -30,19 +31,21 @@ class KimiService:
         """
         Get llm answer content.
         """
+
+        msg = {
+            "role": "user",
+            "content": text
+        }
+
+        if len(self.history) == 5:
+            self.history.pop(0)
+
+        self.history.append(msg)
+
         stime = time.time()
         data = self.client.chat.completions.create(
             model=self.model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": self.tune
-                },
-                {
-                    "role": "user",
-                    "content": text
-                }
-            ]
+            messages=self.history
         )
         logging.info('ChatGPT Response: %s, time used %.2f' % (data.choices[0].message.content, time.time() - stime))
         return data.choices[0].message.content
