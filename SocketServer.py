@@ -1,22 +1,17 @@
 import argparse
 import os
-import pathlib
 import socket
 import time
 import logging
 import traceback
-from logging.handlers import TimedRotatingFileHandler
 
 import librosa
-import requests
 import soundfile
 
-import GPT.tune
 from utils.FlushingFileHandler import FlushingFileHandler
 from ASR import ASRService
 from GPT import llm
-from TTS_.tts import TTService
-from SentimentEngine import SentimentEngine
+from tts_service.tts import TTSService
 
 console_logger = logging.getLogger()
 console_logger.setLevel(logging.INFO)
@@ -42,19 +37,10 @@ def str2bool(v):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    # parser.add_argument("--chatVer", type=int, nargs='?', required=True)
-    parser.add_argument("--port", type=int, default=33333)
-    parser.add_argument("--APIKey", type=str, nargs='?', required=False)
-    parser.add_argument("--email", type=str, nargs='?', required=False)
-    parser.add_argument("--password", type=str, nargs='?', required=False)
-    parser.add_argument("--accessToken", type=str, nargs='?', required=False)
-    parser.add_argument("--proxy", type=str, nargs='?', required=False)
-    parser.add_argument("--paid", type=str2bool, nargs='?', required=False)
-    parser.add_argument("--model", type=str, nargs='?', required=False)
-    # parser.add_argument("--stream", type=str2bool, nargs='?', required=True)
-    parser.add_argument("--character", type=str, default="paimon", nargs='?', required=True)
     parser.add_argument("--ip", type=str, nargs='?', required=False)
-    parser.add_argument("--brainwash", type=str2bool, nargs='?', required=False)
+    parser.add_argument("--port", type=int, default=33333)
+    parser.add_argument("--model", type=str, nargs='?', required=False)
+    parser.add_argument("--character", type=str, default="paimon", nargs='?', required=True)
     parser.add_argument("--kimi-key", type=str, required=True)
     parser.add_argument("--kimi-model", type=str)
     return parser.parse_args()
@@ -66,7 +52,6 @@ class Server:
         self.addr = None
         self.conn = None
         logging.info('Initializing Server...')
-        # self.host = socket.gethostbyname(socket.gethostname())
         self.host = "0.0.0.0"
         self.port = args.port
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -75,11 +60,26 @@ class Server:
         self.tmp_recv_file = 'tmp/server_received.wav'
         self.tmp_proc_file = 'tmp/server_processed.wav'
 
-        ## hard coded character map
+        # hard coded character map
         self.char_name = {
-            'paimon': ['TTS_/models/paimon6k.json', 'TTS_/models/paimon6k_390k.pth', 'character_paimon', 1],
-            'yunfei': ['TTS_/models/yunfeimix2.json', 'TTS_/models/yunfeimix2_53k.pth', 'character_yunfei', 1.1],
-            'catmaid': ['TTS_/models/catmix.json', 'TTS_/models/catmix_107k.pth', 'character_catmaid', 1.2]
+            'paimon': [
+                'tts_service/models/paimon6k.json',
+                'tts_service/models/paimon6k_390k.pth',
+                'character_paimon',
+                1
+            ],
+            'yunfei': [
+                'tts_service/models/yunfeimix2.json',
+                'tts_service/models/yunfeimix2_53k.pth',
+                'character_yunfei',
+                1.1
+            ],
+            'catmaid': [
+                'tts_service/models/catmix.json',
+                'tts_service/models/catmix_107k.pth',
+                'character_catmaid',
+                1.2
+            ]
         }
 
         # PARAFORMER
@@ -88,8 +88,8 @@ class Server:
         # CHAT GPT
         self.kimi = llm.KimiService(args)
 
-        # TTS_
-        self.tts = TTService()
+        # tts_service
+        self.tts = TTSService()
 
         # Sentiment Engine
         # self.sentiment = SentimentEngine.SentimentEngine('SentimentEngine/models/paimon_sentiment.onnx')
@@ -97,7 +97,7 @@ class Server:
     def handle(self):
         """handle client request"""
         logging.info(f"Connected by {self.addr}")
-        self.conn.sendall(b'%s' % self.char_name[args.character][2].encode())
+        self.conn.sendall(b'%s' % self.char_name[arguments.character][2].encode())
         while True:
             try:
                 file = self.__receive_file()
@@ -106,30 +106,9 @@ class Server:
                     f.write(file)
                     logging.info('WAV file received and saved.')
                 ask_text = self.process_voice()
-                # if args.stream:
-                #     for sentence in self.kimi.ask_stream(ask_text):
-                #         self.send_voice(sentence)
-                #     self.notice_stream_end()
-                #     logging.info('Stream finished.')
-                # else:
+
                 resp_text = self.kimi.answer(ask_text)
                 self.send_voice(resp_text)
-                self.notice_stream_end()
-
-            # except revChatGPT.typings.APIConnectionError as e:
-            #     logging.error(e.__str__())
-            #     logging.info('API rate limit exceeded, sending: %s' % GPT.tune.exceed_reply)
-            #     self.send_voice(GPT.tune.exceed_reply, 2)
-            #     self.notice_stream_end()
-            # except revChatGPT.typings.Error as e:
-            #     logging.error(e.__str__())
-            #     logging.info('Something wrong with OPENAI, sending: %s' % GPT.tune.error_reply)
-            #     self.send_voice(GPT.tune.error_reply, 1)
-            #     self.notice_stream_end()
-            except requests.exceptions.RequestException as e:
-                logging.error(e.__str__())
-                logging.info('Something wrong with internet, sending: %s' % GPT.tune.error_reply)
-                self.send_voice(GPT.tune.error_reply, 1)
                 self.notice_stream_end()
             except Exception as e:
                 logging.error(e.__str__())
@@ -213,8 +192,8 @@ class Server:
 
 if __name__ == '__main__':
     try:
-        args = parse_args()
-        s = Server(args)
+        arguments = parse_args()
+        s = Server(arguments)
         s.listen()
     except Exception as e:
         logging.error(e.__str__())

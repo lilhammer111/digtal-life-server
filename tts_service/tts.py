@@ -6,7 +6,7 @@ logging.getLogger().setLevel(logging.INFO)
 logging.basicConfig(level=logging.INFO)
 
 
-class TTService:
+class TTSService:
     def __init__(self):
         pass
 
