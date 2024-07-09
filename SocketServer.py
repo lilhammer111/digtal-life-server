@@ -8,10 +8,11 @@ import traceback
 import librosa
 import soundfile
 
+from SentimentEngine import SentimentEngine
 from utils.FlushingFileHandler import FlushingFileHandler
 from ASR import ASRService
 from GPT import llm
-from tts_service.tts import TTSService
+from tts_service.tts_youdao import TTSService
 
 console_logger = logging.getLogger()
 console_logger.setLevel(logging.INFO)
@@ -74,7 +75,7 @@ class Server:
         self.tts = TTSService()
 
         # Sentiment Engine
-        # self.sentiment = SentimentEngine.SentimentEngine('SentimentEngine/models/paimon_sentiment.onnx')
+        self.sentiment = SentimentEngine.SentimentEngine()
 
     def handle(self):
         """handle client request"""
@@ -122,8 +123,7 @@ class Server:
         if senti_or:
             senti = senti_or
         else:
-            # senti = self.sentiment.infer(resp_text)
-            senti = 2
+            senti = self.sentiment.infer(resp_text)
         senddata += b'?!'
         senddata += b'%i' % senti
         self.conn.sendall(senddata)
