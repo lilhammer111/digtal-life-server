@@ -11,7 +11,7 @@ class KimiService:
     moonshot_v1_128k = "moonshot-v1-128k"
 
     def __init__(self, args):
-        logging.info('Initializing ChatGPT Service...')
+        logging.info('Initializing Chatbot Service...')
         self.model = args.model if args.kimi_model else KimiService.moonshot_v1_32k
         self.kimi_key = args.kimi_key
         self.character = args.character
@@ -54,5 +54,5 @@ class KimiService:
             "role": "assistant",
             "content": content
         })
-        logging.info('ChatGPT Response: %s, time used %.2f' % (content, time.time() - stime))
+        logging.info('Chatbot Response: %s, time used %.2f' % (content, time.time() - stime))
         return content

@@ -1,33 +1,42 @@
-import time
 import requests
+from tts_service.AuthV3Util import addAuthParams
 import logging
 
 logging.getLogger().setLevel(logging.INFO)
 logging.basicConfig(level=logging.INFO)
+# 您的应用ID
+APP_KEY = '1fd553a249e9de05'
+# 您的应用密钥
+APP_SECRET = 'GY3hlLFO9ROPteVnbLr8Fg0G8RjJa3ZK'
 
 
 class TTSService:
     def __init__(self):
         pass
 
-    def read_save(self, text, filename):
-        stime = time.time()
-        # audio = self.read(text)
-        data = {"text": text}
-        tts_resp = requests.post("http://192.168.10.220:5008", json=data)
-        tts_resp.raise_for_status()
-        tts_data = tts_resp.json()
+    def read_save(self, text, filepath):
+        q = text
+        voiceName = "youxiaofu"
+        format = 'wav'
 
-        audio_resp = requests.get(tts_data["data"]["file_url"], stream=True)
-        audio_resp.raise_for_status()
+        data = {'q': q, 'voiceName': voiceName, 'format': format}
+        addAuthParams(APP_KEY, APP_SECRET, data)
+        header = {'Content-Type': 'application/x-www-form-urlencoded'}
+        res = self.doCall('https://openapi.youdao.com/ttsapi', header, data, 'post')
+        self.saveFile(res, file_path=filepath)
 
-        with open(filename, 'wb') as f:
-            for chunk in audio_resp.iter_content(chunk_size=8196):
-                f.write(chunk)
+    def doCall(self, url, header, params, method):
+        if 'get' == method:
+            return requests.get(url, params)
+        elif 'post' == method:
+            return requests.post(url, params, header)
 
-        logging.info('VITS Synth Done, time used %.2f' % (time.time() - stime))
-
-#
-# if __name__ == '__main__':
-#     tts = TTService()
-#     tts.read_save("hello ,what your name?", "server_processed.wav")
+    def saveFile(self, res, file_path):
+        contentType = res.headers['Content-Type']
+        if 'audio' in contentType:
+            fo = open(file_path, "wb")
+            fo.write(res.content)
+            fo.close()
+            print('save file path: ' + file_path)
+        else:
+            print(str(res.content, 'utf-8'))

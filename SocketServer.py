@@ -40,9 +40,9 @@ def parse_args():
     parser.add_argument("--ip", type=str, nargs='?', required=False)
     parser.add_argument("--port", type=int, default=33333)
     parser.add_argument("--model", type=str, nargs='?', required=False)
-    parser.add_argument("--character", type=str, default="paimon", nargs='?', required=True)
+    parser.add_argument("--character", type=str, default="paimon", nargs='?', required=False)
     parser.add_argument("--kimi-key", type=str, default="sk-TtCrzHinIyVKEeaAvIuQPDZtixxADloU9QDlwVoYNdxh2tf9",
-                        required=True)
+                        required=False)
     parser.add_argument("--kimi-model", type=str)
     return parser.parse_args()
 
@@ -134,7 +134,6 @@ class Server:
         self.conn.sendall(b'stream_finished')
 
     def send_voice(self, resp_text, senti_or=None):
-        # self.tts.read_save(resp_text, self.tmp_proc_file, self.tts.hps.data.sampling_rate)
         self.tts.read_save(resp_text, self.tmp_proc_file)
 
         with open(self.tmp_proc_file, 'rb') as f:
@@ -143,7 +142,7 @@ class Server:
             senti = senti_or
         else:
             # senti = self.sentiment.infer(resp_text)
-            senti = 1
+            senti = 2
         senddata += b'?!'
         senddata += b'%i' % senti
         self.conn.sendall(senddata)

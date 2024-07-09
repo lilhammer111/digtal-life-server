@@ -7,9 +7,9 @@ import requests
 
 YOUDAO_URL = 'https://openapi.youdao.com/asrapi'
 
-APP_KEY = 'your_app_key'
+APP_KEY = '1fd553a249e9de05'
 
-APP_SECRET = 'your_app_secret'
+APP_SECRET = 'GY3hlLFO9ROPteVnbLr8Fg0G8RjJa3ZK'
 
 
 class ASRService():
