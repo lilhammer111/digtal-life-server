@@ -1,3 +1,5 @@
+import time
+
 import requests
 from tts_service.AuthV3Util import addAuthParams
 import logging
@@ -10,7 +12,7 @@ APP_KEY = '1fd553a249e9de05'
 APP_SECRET = 'GY3hlLFO9ROPteVnbLr8Fg0G8RjJa3ZK'
 
 
-class TTSService:
+class TTSService_YD:
     def __init__(self):
         pass
 
@@ -40,3 +42,24 @@ class TTSService:
             print('save file path: ' + file_path)
         else:
             print(str(res.content, 'utf-8'))
+
+
+class TTSService_PM:
+    def __init__(self):
+        pass
+
+    def read_save(self, text, filename):
+        stime = time.time()
+        data = {"text": text}
+        tts_resp = requests.post("http://192.168.10.216:5008", json=data)
+        tts_resp.raise_for_status()
+        tts_data = tts_resp.json()
+
+        audio_resp = requests.get(tts_data["data"]["file_url"], stream=True)
+        audio_resp.raise_for_status()
+
+        with open(filename, 'wb') as f:
+            for chunk in audio_resp.iter_content(chunk_size=8196):
+                f.write(chunk)
+
+        logging.info('VITS Synth Done, time used %.2f' % (time.time() - stime))

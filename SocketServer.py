@@ -12,7 +12,7 @@ from SentimentEngine import SentimentEngine
 from utils.FlushingFileHandler import FlushingFileHandler
 from ASR import ASRService
 from GPT import llm
-from tts_service.tts_youdao import TTSService
+from tts_service.tts import TTSService_YD, TTSService_PM
 
 console_logger = logging.getLogger()
 console_logger.setLevel(logging.INFO)
@@ -72,7 +72,8 @@ class Server:
         self.kimi = llm.KimiService(args)
 
         # tts_service
-        self.tts = TTSService()
+        # self.tts = TTSService_YD()  # 有道API
+        self.tts = TTSService_PM()  # 派蒙API
 
         # Sentiment Engine
         self.sentiment = SentimentEngine.SentimentEngine()
