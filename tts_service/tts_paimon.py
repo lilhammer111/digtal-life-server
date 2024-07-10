@@ -12,7 +12,6 @@ class TTService:
 
     def read_save(self, text, filename):
         stime = time.time()
-        # audio = self.read(text)
         data = {"text": text}
         tts_resp = requests.post("http://192.168.10.216:5008", json=data)
         tts_resp.raise_for_status()
